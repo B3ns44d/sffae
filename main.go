@@ -10,12 +10,9 @@ import (
 )
 
 func main() {
-	pwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
+	pwd := handlePath(os.Args[1:])
 
-	files, err := ioutil.ReadDir("./")
+	files, err := ioutil.ReadDir(pwd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,16 +22,48 @@ func main() {
 		if isFile(originalFilePath) && !strings.HasPrefix(file.Name(), ".") {
 			fileName := path.Base(originalFilePath)
 			ext := path.Ext(fileName)
-			extensionPath := path.Join(pwd, ext)
+			extensionPath := strings.Replace(path.Join(pwd, ext), ".", "", 1)
 			if _, err := os.Stat(extensionPath); os.IsNotExist(err) {
 				os.Mkdir(extensionPath, os.ModePerm)
 			}
-			err := CopyFile(originalFilePath, path.Join(extensionPath, fileName))
+			err := moveFile(originalFilePath, path.Join(extensionPath, fileName))
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 	}
+}
+
+func handlePath(args []string) string {
+	if len(args) == 0 {
+		pwd, err := os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return pwd
+	}
+	if isFile(args[0]) {
+		return path.Dir(args[0])
+	}
+	if isDir(args[0]) {
+		if args[0] == "." {
+			pwd, err := os.Getwd()
+			if err != nil {
+				log.Fatal(err)
+			}
+			return pwd
+		}
+		return args[0]
+	}
+	return ""
+}
+
+func isDir(file string) bool {
+	fileInfo, err := os.Stat(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fileInfo.IsDir()
 }
 
 func isFile(file string) bool {
@@ -45,7 +74,7 @@ func isFile(file string) bool {
 	return !fileInfo.IsDir()
 }
 
-func CopyFile(src, dst string) error {
+func moveFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -62,5 +91,5 @@ func CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	return out.Close()
+	return os.Remove(src)
 }
