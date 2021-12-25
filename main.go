@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,7 +17,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var count int
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		count++
+	}
 
+	if count == 0 {
+		fmt.Println("No files in this directory")
+		fmt.Println("Exiting...")
+		os.Exit(0)
+	}
+
+	fmt.Printf("Do you want to move all %d files in this directory? (Y/n): ", count)
+	var answer string
+	fmt.Scanln(&answer)
+	if answer == "n" || answer == "N" {
+		fmt.Println("Exiting...")
+		os.Exit(0)
+	}
+	fmt.Println("Moving files...")
 	for _, file := range files {
 		originalFilePath := path.Join(pwd, file.Name())
 		if isFile(originalFilePath) && !strings.HasPrefix(file.Name(), ".") {
@@ -32,6 +54,7 @@ func main() {
 			}
 		}
 	}
+	fmt.Println("Done!")
 }
 
 func handlePath(args []string) string {
